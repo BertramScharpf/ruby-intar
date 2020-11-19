@@ -1,0 +1,25 @@
+= ruby-intar  --  Interactive Ruby
+
+A simple Irb replacement
+
+
+== About
+
+The Intar project was started in times when Irb was a rather
+unconvenient tool, without colors, difficult to call from
+inside an application and so on.
+
+Today, Intar is a tool far less complex than Irb.
+
+
+
+== Author
+
+Bertram Scharpf <software@bertram-scharpf.de>
+
+
+
+== TODO
+
+Write some more documentation.
+

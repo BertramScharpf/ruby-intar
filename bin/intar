@@ -28,9 +28,7 @@ class Intar::Appl < Application
 
   EOT
 
-  attr_writer :show, :prompt, :histmax
-  def histfile=   f ; @histfile   = nil_if_none f ; end
-  def configfile= f ; @configfile = nil_if_none f ; end
+  attr_writer :show, :prompt, :histmax, :histfile, :configfile
   attr_bang :quiet, :bw, :catch_exit, :histall
 
   define_option "p", :prompt=, "STR", "prompt - see source code for % escapes"
@@ -51,7 +49,7 @@ class Intar::Appl < Application
                                                 "config file, NONE means none"
   alias_option  "c", "configfile"
 
-  define_option "H", :histfile=, "FILE", ".intar_history",
+  define_option "H", :histfile=, "FILE",
                                                "history file, NONE means none"
   alias_option  "H", "histfile"
 
@@ -75,7 +73,11 @@ class Intar::Appl < Application
   define_option "V", :version,                                  "show version"
   alias_option  "V", "version"
 
-  @params = {}
+  @params = {
+    show:     5,
+    shownil:  false,
+    histfile: ".intar_history",
+  }
   class <<self
     attr_reader :params
     def set **kwargs
@@ -101,12 +103,12 @@ class Intar::Appl < Application
     elsif @show then
       p[ :show] = Integer @show
     end
-    p[ :prompt    ] = @prompt          if @prompt
-    p[ :color     ] = false            if @bw
-    p[ :catch_exit] = true             if @catch_exit
-    p[ :histhid   ] = false            if @histall
-    p[ :histfile  ] = @histfile        if @histfile
-    p[ :histmax   ] = Integer @histmax if @histmax
+    p[ :prompt    ] = @prompt               if @prompt
+    p[ :color     ] = false                 if @bw
+    p[ :catch_exit] = true                  if @catch_exit
+    p[ :histhid   ] = false                 if @histall
+    p[ :histfile  ] = nil_if_none @histfile if @histfile
+    p[ :histmax   ] = Integer @histmax      if @histmax
     p
   end
 
@@ -120,8 +122,9 @@ class Intar::Appl < Application
   end
 
   def read_cfg
-    return unless @configfile
-    c = File.expand_path @configfile, "~"
+    cf = nil_if_none @configfile
+    return unless cf
+    c = File.expand_path cf, "~"
     return unless File.exists? c
     load c
   rescue Exception

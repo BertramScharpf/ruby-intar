@@ -112,7 +112,7 @@ class Intar
         switchcolor
         r = $!
       rescue Exception
-        raise if SystemExit === $! and not @params[ :catch_exit]
+        break if SystemExit === $! and not @params[ :catch_exit]
         show_exception
         r = $!
       else

@@ -78,7 +78,7 @@ class Intar
     @obj = obj.nil? ? (eval "self", TOPLEVEL_BINDING) : obj
     @params = DEFAULTS.dup.update params
     @binding = @obj.intar_binding
-    @n = 0
+    @n = 1
     @prompt = Prompt.new
   end
 
@@ -89,8 +89,10 @@ class Intar
   def run
     prompt_load_history
     oldset = eval OLDSET, @binding
-    while l = readline do
+    loop do
       begin
+        l = readline
+        l or break
         @redir = find_redirect l
         r = if l =~ /\A\\(\w+|.)\s*(.*?)\s*\Z/ then
           m = get_metacommand $1
@@ -119,6 +121,7 @@ class Intar
         display r
       end
       oldset.call r, @n
+      @n += 1
     end
     prompt_save_history
   end
@@ -198,7 +201,6 @@ class Intar
 
   def readline
     r, @previous = @previous, nil
-    r or @n += 1
     begin
       cp = cur_prompt r
       l = @prompt.ask cp
@@ -240,6 +242,8 @@ class Intar
     puts i
   end
 
+  PACKAGE_BACKTRACE = %r/#{File.basename __FILE__, ".rb"}.*:\d+:in/
+
   def show_exception
     unless $!.to_s.empty? then
       switchcolor 31, 1
@@ -250,8 +254,7 @@ class Intar
     puts "(#{$!.class})"
     switchcolor 33
     $@.each { |b|
-      r = b.starts_with? __FILE__
-      break if r and (b.rest r) =~ /\A:\d+:/
+      break if b =~ PACKAGE_BACKTRACE
       puts b
     }
     switchcolor

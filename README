@@ -3,6 +3,7 @@
 A simple Irb replacement
 
 
+
 == About
 
 The Intar project was started in times when Irb was a rather
@@ -10,6 +11,10 @@ unconvenient tool, without colors, difficult to call from
 inside an application and so on.
 
 Today, Intar is a tool far less complex than Irb.
+
+Yet, Intar is more robust. Try this in Irb and in Intar:
+
+  prompt> Thread.new { sleep 3 ; Thread.main.raise "stop" }
 
 
 

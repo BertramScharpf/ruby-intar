@@ -19,8 +19,11 @@ class Intar
     def ask prompt
       l = Readline.readline prompt
     rescue Interrupt
-      puts "^C  --  #{$!.inspect}"
+      puts
       retry
+    rescue Exception
+      puts
+      raise
     end
 
     def last

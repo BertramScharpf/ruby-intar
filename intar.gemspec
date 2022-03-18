@@ -22,6 +22,8 @@ Gem::Specification.new do |s|
 
   s.extensions        = %w()
   s.files             = %w(
+                          README
+                          LICENSE
                           lib/intar.rb
                           lib/intar/version.rb
                           lib/intar/prompt.rb

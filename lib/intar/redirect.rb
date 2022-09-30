@@ -38,9 +38,7 @@ class Intar
       end
     end
     def initialize pager
-      $stderr.puts "AAAA " + pager.inspect
       @pager = pager||ENV[ "PAGER"]||"more"
-      $stderr.puts "AAAA " + @pager.inspect
     end
     def outfile
       IO.popen @pager.to_s, "w"

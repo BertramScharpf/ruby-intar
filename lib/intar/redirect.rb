@@ -16,14 +16,16 @@ class Intar
   class Redirect
     def redirect_output
       out = outfile
-      stdin, stdout = $stdin.dup, $stdout.dup
-      $stdin .reopen "/dev/null"
-      $stdout.reopen out
-      yield
-    ensure
-      $stdin .reopen stdin
-      $stdout.reopen stdout
-      out.close
+      begin
+        stdin, stdout = $stdin.dup, $stdout.dup
+        $stdin .reopen "/dev/null"
+        $stdout.reopen out
+        yield
+      ensure
+        $stdin .reopen stdin
+        $stdout.reopen stdout
+        out.close
+      end
     end
   end
 
@@ -36,10 +38,14 @@ class Intar
       end
     end
     def initialize pager
+      $stderr.puts "AAAA " + pager.inspect
       @pager = pager||ENV[ "PAGER"]||"more"
+      $stderr.puts "AAAA " + @pager.inspect
     end
     def outfile
-      IO.popen @pager.to_s, "w" rescue raise Failed, "Pipe error: #$!"
+      IO.popen @pager.to_s, "w"
+    rescue Errno::ENOENT
+      raise Failed, "Pipe error: #$!"
     end
   end
 

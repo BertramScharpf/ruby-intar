@@ -16,8 +16,20 @@ class Intar
       @new = 0
     end
 
+    def push text
+      Readline.pre_input_hook = proc {
+        Readline.insert_text text
+        Readline.redisplay
+      }
+      nil
+    end
+
     def ask prompt
-      l = Readline.readline prompt
+      begin
+        Readline.readline prompt
+      ensure
+        Readline.pre_input_hook = nil
+      end
     rescue Interrupt
       puts
       retry
@@ -39,7 +51,7 @@ class Intar
       end
     end
 
-    def push item
+    def push_history item
       item.empty? and return
       last != item or return
       Readline::HISTORY.push item

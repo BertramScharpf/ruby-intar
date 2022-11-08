@@ -205,7 +205,7 @@ class Intar
       cp = cur_prompt r
       l = @prompt.ask cp
       return if l.nil?
-      @prompt.push l unless !r and @params[ :histhid] and l =~ /\A[ \t]+/
+      @prompt.push_history l unless !r and @params[ :histhid] and l =~ /\A[ \t]+/
       if r then
         r << $/ << l
       else
@@ -498,7 +498,6 @@ class Intar
       p = File.read fn
       p.strip!
       @prompt.push p
-      @redir.redirect_output do eval p, @binding, @file end
     ensure
       File.unlink fn
     end

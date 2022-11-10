@@ -32,7 +32,7 @@ class Intar
   class RedirectPipe < Redirect
     class <<self
       def detect line, pager
-        if line.slice! /\s+\|(\b.*)?\z/ then
+        if line.slice! /\s+\|(\b[^|&;{}()\[\]]*)?\z/ then
           new $1||pager
         end
       end

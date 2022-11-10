@@ -63,7 +63,7 @@ class Intar
 
 
   DEFAULTS = {
-    prompt:     "%(32)c%i%c:%1c%03n%c%> ",
+    prompt:     "%(32)c%16i%c:%1c%d:%3n%c%> ",
     color:      true,
     show:       1,
     shownil:    false,
@@ -74,12 +74,23 @@ class Intar
     histmax:    500,
   }
 
+  @@current = nil
+
+  attr_reader :params, :prompt, :depth, :n
   def initialize obj = nil, **params
     @obj = obj.nil? ? (eval "self", TOPLEVEL_BINDING) : obj
-    @params = DEFAULTS.dup.update params
-    @binding = @obj.intar_binding
+    if @@current then
+      @params = @@current.params
+      @prompt = @@current.prompt
+      @depth  = @@current.depth + 1
+    else
+      @params = DEFAULTS.dup.update params
+      @prompt = Prompt.new
+      @depth = 0
+    end
     @n = 1
-    @prompt = Prompt.new
+
+    @binding = @obj.intar_binding
   end
 
 
@@ -87,43 +98,46 @@ class Intar
   class Failed < Exception ; end
 
   def run
-    prompt_load_history
-    oldset = eval OLDSET, @binding
-    loop do
-      begin
-        l = readline
-        l or break
-        @redir = find_redirect l
-        r = if l =~ /\A\\(\w+|.)\s*(.*?)\s*\Z/ then
-          m = get_metacommand $1
-          send m.method, (eval_param $2)
-        else
-          begin
-            @redir.redirect_output do eval l, @binding, @file end
-          rescue SyntaxError
-            raise if l.end_with? $/
-            @previous = l
-            next
+    set_current do
+      prompt_load_history
+      oldset = eval OLDSET, @binding
+      loop do
+        begin
+          l = readline
+          l or break
+          @redir = find_redirect l
+          r = if l =~ /\A\\(\w+|.)\s*(.*?)\s*\Z/ then
+            m = get_metacommand $1
+            send m.method, (eval_param $2)
+          else
+            begin
+              l.sub! %r/\s*&\s*\z/, " do |obj| Intar.run obj end"
+              @redir.redirect_output do eval l, @binding, @file end
+            rescue SyntaxError
+              raise if l.end_with? $/
+              @previous = l
+              next
+            end
           end
+        rescue Quit
+          break
+        rescue Failed
+          switchcolor 1, 31
+          puts $!
+          switchcolor
+          r = $!
+        rescue Exception
+          break if SystemExit === $! and not @params[ :catch_exit]
+          show_exception
+          r = $!
+        else
+          display r
         end
-      rescue Quit
-        break
-      rescue Failed
-        switchcolor 31, 1
-        puts $!
-        switchcolor
-        r = $!
-      rescue Exception
-        break if SystemExit === $! and not @params[ :catch_exit]
-        show_exception
-        r = $!
-      else
-        display r
+        oldset.call r, @n
+        @n += 1
       end
-      oldset.call r, @n
-      @n += 1
+      prompt_save_history
     end
-    prompt_save_history
   end
 
   def execute code
@@ -132,6 +146,13 @@ class Intar
 
 
   private
+
+  def set_current
+    old, @@current = @@current, self
+    yield
+  ensure
+    @@current = old
+  end
 
   def find_redirect line
     RedirectPipe.detect line, @params[ :pager]  or
@@ -158,44 +179,56 @@ class Intar
 
   def cur_prompt prev
     p = @params[ :prompt].to_s
-    p.gsub /%(?:
-               \(([^\)]+)?\)
-             |
-               ([+-]?[0-9]+(?:\.[0-9]+)?)
-             )?(.)/nx do
-      case $3
-        when "s" then @obj.to_s
-        when "i" then $1 ? (@obj.send $1) : @obj.inspect
-        when "n" then "%#$2d" % @n
-        when "t" then Time.now.strftime $1||"%X"
-        when "u" then Etc.getpwuid.name
-        when "h" then Socket.gethostname
-        when "w" then cwd_short
-        when "W" then File.basename cwd_short
-        when "c" then color *($1 || $2 || "").split.map { |x| x.to_i }
+    p.gsub /%
+            (\d+)?
+            (?:\(([^)]*)\)|\{([^}]*)\})?
+            (.)/nx do
+      sub = $2||$3
+      case $4
+        when "s" then str_axe $1, @obj.to_s
+        when "i" then str_axe $1, (sub ? (@obj.send sub) : @obj.inspect)
+        when "C" then str_axe $1, @obj.class.name
+        when "n" then "%0#$1d" % @n
+        when "d" then "%0#$1d" % @depth
+        when "t" then str_axe $1, (Time.now.strftime sub||"%X")
+        when "u" then str_axe $1, Etc.getpwuid.name
+        when "h" then str_axe $1, Socket.gethostname
+        when "w" then str_axe $1, cwd_short
+        when "W" then str_axe $1, (File.basename cwd_short)
+        when "c" then color [$1,sub].compact.map { |c| c.scan %r/\d+/ }.flatten
         when ">" then prev ? "." : Process.uid == 0 ? "#" : ">"
-        when "%" then $3
+        when "%" then $4
         else          $&
       end
     end
   end
 
-  def color *c
+  def str_axe len, str
+    if len then
+      str.axe len.to_i
+    else
+      str
+    end
+  end
+
+  def color codes
     if @params[ :color] then
-      s = c.map { |i| "%d" % i }.join ";"
-      "\e[#{s}m"
+      "\e[#{codes.join ';'}m"
     end
   end
 
   def switchcolor *c
-    s = color *c
+    s = color c
     print s
   end
 
   def cwd_short
     r = Dir.pwd
     h = Etc.getpwuid.dir
-    r[ 0, h.length] == h and r[ 0, h.length] = "~"
+    if r[ 0, h.length] == h then
+      n = r[ h.length]
+      r[ 0, h.length] = "~" if !n || n == "/"
+    end
     r
   end
 
@@ -246,11 +279,11 @@ class Intar
 
   def show_exception
     unless $!.to_s.empty? then
-      switchcolor 31, 1
+      switchcolor 1, 31
       print $!
       print " " unless $!.to_s =~ /\s\z/
     end
-    switchcolor 31, 22
+    switchcolor 22, 31
     puts "(#{$!.class})"
     switchcolor 33
     $@.each { |b|

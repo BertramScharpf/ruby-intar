@@ -46,8 +46,7 @@ class Intar
       i = Readline::HISTORY.length
       while i > 0 do
         i -= 1
-        l = Readline::HISTORY[i]
-        yield l
+        yield Readline::HISTORY[i]
       end
     end
 

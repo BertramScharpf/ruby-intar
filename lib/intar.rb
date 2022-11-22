@@ -95,48 +95,44 @@ class Intar
 
 
   class Quit   < Exception ; end
-  class Failed < Exception ; end
+  class Bye    < Quit      ; end
+  class Break  < Bye       ; end
+  class Failed < StandardError ; end
 
   def run
-    set_current do
-      prompt_load_history
-      oldset = eval OLDSET, @binding
-      loop do
-        begin
+    handle_history do
+      set_current do
+        oldset = eval OLDSET, @binding
+        loop do
           l = readline
           l or break
           @redir = find_redirect l
-          r = if l =~ /\A\\(\w+|.)\s*(.*?)\s*\Z/ then
-            m = get_metacommand $1
-            send m.method, (eval_param $2)
-          else
-            begin
-              l.sub! %r/\s*&\s*\z/, " do |obj| Intar.run obj end"
+          r = begin
+            if l =~ /\A\\(\w+|.)\s*(.*?)\s*\Z/ then
+              send (get_metacommand $1).method, (eval_param $2)
+            else
+              l.sub! %r/\s*&\s*\z/, SUB
               @redir.redirect_output do eval l, @binding, @file end
-            rescue SyntaxError
-              raise if l.end_with? $/
-              @previous = l
-              next
             end
+          rescue Bye
+            raise if @depth.nonzero?
+            break
+          rescue Quit
+            break
+          rescue SyntaxError
+            raise if l.end_with? $/
+            @previous = l
+            next
+          rescue Exception
+            break if SystemExit === $! and not @params[ :catch_exit]
+            show_exception
+            $!
           end
-        rescue Quit
-          break
-        rescue Failed
-          switchcolor 1, 31
-          puts $!
-          switchcolor
-          r = $!
-        rescue Exception
-          break if SystemExit === $! and not @params[ :catch_exit]
-          show_exception
-          r = $!
-        else
           display r
+          oldset.call r, @n
+          @n += 1
         end
-        oldset.call r, @n
-        @n += 1
       end
-      prompt_save_history
     end
   end
 
@@ -146,6 +142,19 @@ class Intar
 
 
   private
+
+  def handle_history
+    unless @depth.nonzero? then
+      begin
+        prompt_load_history
+        yield
+      ensure
+        prompt_save_history
+      end
+    else
+      yield
+    end
+  end
 
   def set_current
     old, @@current = @@current, self
@@ -160,6 +169,14 @@ class Intar
     RedirectNone.new
   end
 
+
+  SUB = <<~EOT
+    \ do |obj|
+      Intar.run obj
+    rescue Intar::Break
+      break
+    end
+  EOT
 
   OLDSET = <<~EOT
     _, __, ___ = nil, nil, nil
@@ -384,36 +401,36 @@ class Intar
     Leave Intar.
   EOT
   def cmd_quit x
-    raise Quit
+    lx = $&.length.nonzero? if x =~ /!*/
+    raise lx ? (lx > 1 ? Bye : Break) : Quit
   end
 
   metacmd %w(cd), "Change directory", <<~EOT
     Switch to a different working directory.
-    Former directories will be kept in a stack.
+    Former directories will be pushed to a stack.
 
-      %[N]    exchange with stack item #N
-      =[N]    drop and set to stack item #N
-      -[N]    drop stack item #N
+      N|PATH|%     change directory and push
+      -N|PATH|%    drop stack item
+      =N|PATH|%    change directory but do not push
 
-    Default N is 1.
+    Default N or % is 1.
   EOT
   def cmd_cd x
     @wds ||= []
     y = Dir.getwd
-    if x =~ /\A([%=-])?(\d+)?\z/ then
-      x = $2 ? (@wds.delete_at -$2.to_i) : @wds.pop
-      x or raise Failed, ($2 ? "No directory ##$2." : "No last directory.")
-      case $1
-        when "-" then x = nil
-        when "=" then y = nil
-      end
-    end
     if x then
-      x = File.expand_path x
-      Dir.chdir x rescue raise Failed, $!.to_s
-      @wds.push y if y
-      y = Dir.getwd
-      @wds.delete y
+      cmd = x.slice! /\A[=-]/
+      x = case x
+        when /\A\d+\z/ then @wds[ -x.to_i] or raise Failed, "No directory ##{x}."
+        when /\A%?\z/  then @wds.last      or raise Failed, "No last directory."
+        else                File.expand_path x
+      end
+      @wds.delete x
+      if cmd != "-" then
+        Dir.chdir x
+        @wds.push y if cmd != "="
+        y = x
+      end
     end
     @redir.redirect_output do
       i = @wds.length
@@ -500,7 +517,7 @@ class Intar
   EOT
   def cmd_input x
     x or raise Failed, "No input file given."
-    l = File.read x rescue raise Failed, $!.to_s
+    l = File.read x
     @redir.redirect_output do
       eval l, @binding, x
     end
@@ -511,7 +528,7 @@ class Intar
   EOT
   def cmd_output x
     if x then
-      File.open x, "w" do end rescue raise Failed, "File error: #$!"
+      File.open x, "w" do end
     end
     @params[ :output] = x
   end

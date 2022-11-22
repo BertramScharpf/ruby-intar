@@ -18,6 +18,21 @@ Yet, Intar is more robust. Try this in Irb and in Intar:
 
 
 
+== Usage
+
+=== Subcommands
+
+  obj.method &      enter a sub-Intar
+  obj.each &        enter multiple sub-Intars
+
+  \q                exit from the innermost sub-Intar
+  \q!               exit from the innermost sub-Intar loop
+  \q!!              exit from all levels
+
+  \h                get a list of all subcommands
+
+
+
 == Author
 
 Bertram Scharpf <software@bertram-scharpf.de>

@@ -112,17 +112,19 @@ class Intar
               send (get_metacommand $1).method, (eval_param $2)
             else
               l.sub! %r/\s*&\s*\z/, SUB
-              @redir.redirect_output do eval l, @binding, @file end
+              begin
+                @redir.redirect_output do eval l, @binding, @file end
+              rescue SyntaxError
+                raise if l.end_with? $/
+                @previous = l
+                next
+              end
             end
           rescue Bye
             raise if @depth.nonzero?
             break
           rescue Quit
             break
-          rescue SyntaxError
-            raise if l.end_with? $/
-            @previous = l
-            next
           rescue Exception
             break if SystemExit === $! and not @params[ :catch_exit]
             show_exception

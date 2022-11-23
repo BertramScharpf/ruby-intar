@@ -4,7 +4,7 @@
 
 class Intar
 
-  VERSION = "2.5".freeze
+  VERSION = "2.6".freeze
 
 end
 

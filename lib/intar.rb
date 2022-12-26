@@ -401,6 +401,11 @@ class Intar
 
   metacmd %w(q x quit exit), "Quit Intar", <<~EOT
     Leave Intar.
+
+      plain     quit current Intar level
+      !         quit current loop
+      !!        quit all levels
+
   EOT
   def cmd_quit x
     lx = $&.length.nonzero? if x =~ /!*/

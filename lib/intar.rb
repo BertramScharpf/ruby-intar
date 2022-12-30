@@ -94,6 +94,7 @@ class Intar
   end
 
 
+  class Clear  < Exception ; end
   class Quit   < Exception ; end
   class Bye    < Quit      ; end
   class Break  < Bye       ; end
@@ -107,19 +108,21 @@ class Intar
           l = readline
           l or break
           @redir = find_redirect l
-          r = begin
-            if l =~ /\A\\(\w+|.)\s*(.*?)\s*\Z/ then
-              send (get_metacommand $1).method, (eval_param $2)
+          begin
+            if l.slice! /^\\(\w+|.)\s*(.*?)\s*$\n?/ then
+              r = send (get_metacommand $1).method, (eval_param $2)
+              l.empty? or @previous = l
             else
-              l.sub! %r/\s*&\s*\z/, SUB
               begin
-                @redir.redirect_output do eval l, @binding, @file end
+                r = eval_line l
               rescue SyntaxError
                 raise if l.end_with? $/
                 @previous = l
-                next
               end
             end
+            next if @previous
+          rescue Clear
+            @previous = nil
           rescue Bye
             raise if @depth.nonzero?
             break
@@ -144,6 +147,11 @@ class Intar
 
 
   private
+
+  def eval_line l
+    ls = l.sub %r/\s*&\s*\z/, SUB
+    @redir.redirect_output do eval ls, @binding, @file end
+  end
 
   def handle_history
     unless @depth.nonzero? then
@@ -370,7 +378,7 @@ class Intar
         puts "Metacommand: #{names.join ' '}"
         puts "Summary:     #{mc.summary}"
         puts "Description:"
-        puts mc.description
+        mc.description.each_line { |l| print "  " ; puts l }
       else
         l = cmds_list.map { |k,v| [v,k] }
         puts "Metacommands:"
@@ -405,11 +413,18 @@ class Intar
       plain     quit current Intar level
       !         quit current loop
       !!        quit all levels
-
   EOT
   def cmd_quit x
     lx = $&.length.nonzero? if x =~ /!*/
     raise lx ? (lx > 1 ? Bye : Break) : Quit
+  end
+
+  metacmd %w(c clear), "Clear command line", <<~EOT
+    Use this if a statement cannot be successfully ended,
+    i. e. when there is no other way to leave the dot prompt.
+  EOT
+  def cmd_clear x
+    raise Clear
   end
 
   metacmd %w(cd), "Change directory", <<~EOT

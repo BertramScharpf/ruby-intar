@@ -121,8 +121,10 @@ class Intar
               end
             end
             next if @previous
+            display r
           rescue Clear
             @previous = nil
+            next
           rescue Bye
             raise if @depth.nonzero?
             break
@@ -130,10 +132,9 @@ class Intar
             break
           rescue Exception
             break if SystemExit === $! and not @params[ :catch_exit]
+            r = $!
             show_exception
-            $!
           end
-          display r
           oldset.call r, @n
           @n += 1
         end

@@ -125,7 +125,7 @@ class Intar::Appl < Application
     cf = nil_if_none @configfile
     return unless cf
     c = File.expand_path cf, "~"
-    return unless File.exists? c
+    return unless File.exist? c
     load c
   rescue Exception
     $@.pop 2

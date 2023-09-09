@@ -154,7 +154,18 @@ class Intar
   private
 
   def eval_line l
-    ls = l.sub %r/\s*&\s*\z/, SUB
+    ls = l.sub %r/\s+&(\w+)?\s*\z/ do
+      <<~EOT
+        \ do |obj|
+          Intar.open #{"obj " unless $1}do |i|
+            #{"# " unless $1}i.set_var "#$1", obj
+            i.run
+          end
+        rescue Intar::Break
+          break
+        end
+      EOT
+    end
     @redir.redirect_output do eval ls, @binding, @file end
   end
 
@@ -184,14 +195,6 @@ class Intar
     RedirectNone.new
   end
 
-
-  SUB = <<~EOT
-    \ do |obj|
-      Intar.run obj
-    rescue Intar::Break
-      break
-    end
-  EOT
 
   OLDSET = <<~EOT
     _, __, ___ = nil, nil, nil

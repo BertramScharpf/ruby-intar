@@ -146,6 +146,10 @@ class Intar
     eval code, @binding, "#{self.class}/execute"
   end
 
+  def set_var name, val
+    @binding.local_variable_set name, val
+  end
+
 
   private
 

@@ -12,7 +12,8 @@ inside an application and so on.
 
 Today, Intar is a tool far less complex than Irb.
 
-Yet, Intar is more robust. Try this in Irb and in Intar:
+Yet, Intar is more robust. Have a look at what happens
+after this in Irb and in Intar:
 
   prompt> Thread.new { sleep 3 ; Thread.main.raise "stop" }
 

@@ -76,21 +76,21 @@ class Intar
 
   @@current = nil
 
-  attr_reader :params, :prompt, :depth, :n
+  attr_reader :params, :prompt, :depth, :n, :binding
   def initialize obj = nil, **params
     @obj = obj.nil? ? (eval "self", TOPLEVEL_BINDING) : obj
     if @@current then
-      @params = @@current.params
-      @prompt = @@current.prompt
-      @depth  = @@current.depth + 1
+      @params  = @@current.params
+      @prompt  = @@current.prompt
+      @depth   = @@current.depth + 1
+      @binding = @@current.binding
     else
       @params = DEFAULTS.dup.update params
       @prompt = Prompt.new
       @depth = 0
+      @binding = @obj.intar_binding
     end
     @n = 1
-
-    @binding = @obj.intar_binding
   end
 
 

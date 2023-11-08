@@ -3,7 +3,7 @@
 #
 
 require "supplement"
-require "readline"
+require "reline"
 
 
 class Intar
@@ -12,23 +12,23 @@ class Intar
 
     def initialize histfile: nil, limit: nil
       @limit = limit.nonzero?
-      Readline::HISTORY.clear
+      Reline::HISTORY.clear
       @new = 0
     end
 
     def push text
-      Readline.pre_input_hook = proc {
-        Readline.insert_text text
-        Readline.redisplay
+      Reline.pre_input_hook = proc {
+        Reline.insert_text text
+        Reline.redisplay
       }
       nil
     end
 
     def ask prompt
       begin
-        Readline.readline prompt
+        Reline.readline prompt
       ensure
-        Readline.pre_input_hook = nil
+        Reline.pre_input_hook = nil
       end
     rescue Interrupt
       puts
@@ -39,21 +39,21 @@ class Intar
     end
 
     def last
-      Readline::HISTORY[-1] unless Readline::HISTORY.empty?
+      Reline::HISTORY[-1] unless Reline::HISTORY.empty?
     end
 
     def scan_history
-      i = Readline::HISTORY.length
+      i = Reline::HISTORY.length
       while i > 0 do
         i -= 1
-        yield Readline::HISTORY[i]
+        yield Reline::HISTORY[i]
       end
     end
 
     def push_history item
       item.empty? and return
       last != item or return
-      Readline::HISTORY.push item
+      Reline::HISTORY.push item
       @new += 1
     end
 
@@ -61,14 +61,14 @@ class Intar
       with_filepath filepath do |p|
         read_file_if p do |f|
           h = []
-          @new.times { h.push Readline::HISTORY.pop }
-          Readline::HISTORY.clear
+          @new.times { h.push Reline::HISTORY.pop }
+          Reline::HISTORY.clear
           f.each_line { |l|
             l.chomp!
             l.sub! "\r", "\n"
-            Readline::HISTORY.push l
+            Reline::HISTORY.push l
           }
-          Readline::HISTORY.push h.pop while h.any?
+          Reline::HISTORY.push h.pop while h.any?
         end
         nil
       end
@@ -86,9 +86,9 @@ class Intar
           end
           File.open p, "w" do |f|
             old.each { |l| f.puts l }
-            i = Readline::HISTORY.length - @new
-            while i < Readline::HISTORY.length do
-              l = Readline::HISTORY[ i].sub "\n", "\r"
+            i = Reline::HISTORY.length - @new
+            while i < Reline::HISTORY.length do
+              l = Reline::HISTORY[ i].sub "\n", "\r"
               f.puts l
               i += 1
             end
@@ -99,8 +99,8 @@ class Intar
     end
 
     def limit_history max
-      n = Readline::HISTORY.length - max
-      n.times { Readline::HISTORY.shift }
+      n = Reline::HISTORY.length - max
+      n.times { Reline::HISTORY.shift }
       @new > max and @new = max
       nil
     end

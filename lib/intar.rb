@@ -40,9 +40,7 @@ everywhere inside your Ruby program.
 
 
 class Object
-  def intar_binding
-    binding
-  end
+  def empty_binding ; binding ; end
 end
 
 
@@ -50,13 +48,19 @@ class Intar
 
   class <<self
 
-    def open obj = nil, **params
+    def open obj = main, **params
       i = new obj, **params
       yield i
     end
 
-    def run obj = nil, **params
+    def run obj = main, **params
       open obj, **params do |i| i.run end
+    end
+
+    private
+
+    def main
+      eval "self", TOPLEVEL_BINDING
     end
 
   end
@@ -74,25 +78,32 @@ class Intar
     histmax:    500,
   }
 
-  @@current = nil
 
-  attr_reader :params, :prompt, :depth, :n, :binding
+  private
+
+  @@prev = nil
+
+  SET_BINDING = "proc { |_| _.instance_eval { binding } }"
+
   def initialize obj = nil, **params
-    @obj = obj.nil? ? (eval "self", TOPLEVEL_BINDING) : obj
-    if @@current then
-      @params  = @@current.params
-      @prompt  = @@current.prompt
-      @depth   = @@current.depth + 1
-      @binding = @@current.binding
+    @obj = obj
+    @n = 1
+    if @@prev then
+      @params = @@prev.params
+      @prompt = @@prev.prompt
+      @depth  = @@prev.depth + 1
+      @binding = (@@prev.execute SET_BINDING).call @obj
     else
       @params = DEFAULTS.dup.update params
       @prompt = Prompt.new
-      @depth = 0
-      @binding = @obj.intar_binding
+      @depth  = 0
+      @binding = (eval SET_BINDING, empty_binding).call @obj
     end
-    @n = 1
   end
 
+  public
+
+  attr_reader :params, :prompt, :depth, :n, :obj
 
   class Clear  < Exception ; end
   class Quit   < Exception ; end
@@ -103,7 +114,7 @@ class Intar
   def run
     handle_history do
       set_current do
-        oldset = eval OLDSET, @binding
+        eval OLD_INIT, @binding
         loop do
           l = readline
           l or break
@@ -135,9 +146,11 @@ class Intar
             r = $!
             show_exception
           end
-          oldset.call r, @n
+          (eval OLD_SET, @binding).call r, @n
           @n += 1
         end
+      ensure
+        eval OLD_INIT, @binding
       end
     end
   end
@@ -157,7 +170,7 @@ class Intar
     ls = l.sub %r/\s+&(\w+)?\s*\z/ do
       <<~EOT
         \ do |obj|
-          Intar.open #{"obj " unless $1}do |i|
+          Intar.open #{$1 ? "self" : "obj"} do |i|
             #{"# " unless $1}i.set_var "#$1", obj
             i.run
           end
@@ -183,10 +196,10 @@ class Intar
   end
 
   def set_current
-    old, @@current = @@current, self
+    old, @@prev = @@prev, self
     yield
   ensure
-    @@current = old
+    @@prev = old
   end
 
   def find_redirect line
@@ -196,8 +209,11 @@ class Intar
   end
 
 
-  OLDSET = <<~EOT
+  OLD_INIT = <<~EOT
     _, __, ___ = nil, nil, nil
+  EOT
+
+  OLD_SET = <<~EOT
     proc { |r,n|
       Array === __ or __ = []
       Hash === ___ or ___ = {}

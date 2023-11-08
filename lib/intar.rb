@@ -60,7 +60,7 @@ class Intar
     private
 
     def main
-      eval "self", TOPLEVEL_BINDING
+      TOPLEVEL_BINDING.eval "self"
     end
 
   end
@@ -92,13 +92,14 @@ class Intar
       @params = @@prev.params
       @prompt = @@prev.prompt
       @depth  = @@prev.depth + 1
-      @binding = (@@prev.execute SET_BINDING).call @obj
+      sb      = @@prev.execute SET_BINDING
     else
       @params = DEFAULTS.dup.update params
       @prompt = Prompt.new
       @depth  = 0
-      @binding = (eval SET_BINDING, empty_binding).call @obj
+      sb      = empty_binding.eval SET_BINDING
     end
+    @binding = sb.call @obj
   end
 
   public
@@ -114,7 +115,7 @@ class Intar
   def run
     handle_history do
       set_current do
-        eval OLD_INIT, @binding
+        execute OLD_INIT
         loop do
           l = readline
           l or break
@@ -146,17 +147,17 @@ class Intar
             r = $!
             show_exception
           end
-          (eval OLD_SET, @binding).call r, @n
+          (execute OLD_SET).call r, @n
           @n += 1
         end
       ensure
-        eval OLD_INIT, @binding
+        execute OLD_INIT
       end
     end
   end
 
   def execute code
-    eval code, @binding, "#{self.class}/execute"
+    @binding.eval code, @file||"#{self.class}/execute"
   end
 
   def set_var name, val
@@ -179,7 +180,7 @@ class Intar
         end
       EOT
     end
-    @redir.redirect_output do eval ls, @binding, @file end
+    @redir.redirect_output do execute ls end
   end
 
   def handle_history
@@ -347,7 +348,7 @@ class Intar
   def eval_param l
     eot = "EOT0001"
     eot.succ! while l[ eot]
-    l = eval "<<#{eot}\n#{l}\n#{eot}", @binding, @file
+    l = execute "<<#{eot}\n#{l}\n#{eot}"
     l.strip!
     l.notempty?
   end
@@ -565,7 +566,7 @@ class Intar
     x or raise Failed, "No input file given."
     l = File.read x
     @redir.redirect_output do
-      eval l, @binding, x
+      @binding.eval l, x
     end
   end
 

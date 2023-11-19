@@ -23,9 +23,9 @@ after this in Irb and in Intar:
 
 === Subcommands
 
-  obj.method &      enter a sub-Intar
-  obj.each &        enter multiple sub-Intars
-  obj.method &x     enter a sub-Intar with variable x
+  obj.method !      enter a sub-Intar
+  obj.each !        enter multiple sub-Intars
+  obj.method !x     enter a sub-Intar with variable x
 
   \q                exit from the innermost sub-Intar
   \q!               exit from the innermost sub-Intar loop

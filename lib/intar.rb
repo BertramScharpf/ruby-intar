@@ -168,7 +168,7 @@ class Intar
   private
 
   def eval_line l
-    ls = l.sub %r/\s+!(\w+)?\s*\z/ do
+    ls = l.sub %r/\s+\+>(\w+)?\s*\z/ do
       <<~EOT
         \ do |obj|
           Intar.open #{$1 ? "self" : "obj"} do |i|

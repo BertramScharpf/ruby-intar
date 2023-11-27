@@ -116,6 +116,7 @@ class Intar
     handle_history do
       set_current do
         execute OLD_INIT
+        r = nil
         loop do
           l = readline
           l or break
@@ -150,6 +151,7 @@ class Intar
           (execute OLD_SET).call r, @n
           @n += 1
         end
+        r
       ensure
         execute OLD_INIT
       end
@@ -168,19 +170,35 @@ class Intar
   private
 
   def eval_line l
-    ls = l.sub %r/\s+\+>(\w+)?\s*\z/ do
-      <<~EOT
-        \ do |obj|
-          Intar.open #{$1 ? "self" : "obj"} do |i|
-            #{"# " unless $1}i.set_var "#$1", obj
-            i.run
-          end
-        rescue Intar::Break
-          break
+    if l =~ %r/\s*(?:\{|\bdo)\s*(?:\|([a-z0-9_,]*)\|)?\s*&\z/ then
+      cmd = $`
+      argl = $1
+      if argl.notempty? then
+        s = (argl.split ",").map { |a|
+          break unless a =~ /\A[a-z][a-z0-9_]*\z/
+          %Q((_i.set_var "#{a}", #{a}))
+        }
+        if s then
+          sets = s.join "; "
+          iobj = "self"
         end
-      EOT
+      else
+        argl = iobj = "obj"
+      end
+      if iobj then
+        l = cmd + <<~EOT
+          \ do |#{argl}|
+            Intar.open #{iobj} do |_i|
+              #{sets}
+              _i.run
+            end
+          rescue Intar::Break
+            break
+          end
+        EOT
+      end
     end
-    @redir.redirect_output do execute ls end
+    @redir.redirect_output do execute l end
   end
 
   def handle_history

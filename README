@@ -23,15 +23,17 @@ after this in Irb and in Intar:
 
 === Subcommands
 
-  obj.method +>     enter a sub-Intar
-  obj.each +>       enter multiple sub-Intars
-  obj.method +>x    enter a sub-Intar with variable x
+  obj.method do &       enter a sub-Intar
+  obj.method { &        enter a sub-Intar
+  obj.each { &          enter multiple sub-Intars
+  obj.method { |x| &    enter a sub-Intar with variable x
+  obj.method { |x,y| &  enter a sub-Intar with multiple variables
 
-  \q                exit from the innermost sub-Intar
-  \q!               exit from the innermost sub-Intar loop
-  \q!!              exit from all levels
+  \q                    exit from the innermost sub-Intar
+  \q!                   exit from the innermost sub-Intar loop
+  \q!!                  exit from all levels
 
-  \h                get a list of all subcommands
+  \h                    get a list of all subcommands
 
 
 

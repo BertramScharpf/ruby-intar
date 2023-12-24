@@ -92,6 +92,7 @@ class Intar::Appl < Application
       i.execute @args.shift while @args.notempty?
       i.run
     end
+    nil
   end
 
   private

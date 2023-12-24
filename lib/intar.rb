@@ -144,7 +144,7 @@ class Intar
           rescue Quit
             break
           rescue Exception
-            break if SystemExit === $! and not @params[ :catch_exit]
+            raise if SystemExit === $! and not @params[ :catch_exit]
             r = $!
             show_exception
           end

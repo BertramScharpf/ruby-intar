@@ -151,6 +151,8 @@ class Intar
           (execute OLD_SET).call r, @n
           @n += 1
         rescue
+          switchcolor 33
+          puts "Internal error."
           show_exception
         end
         r

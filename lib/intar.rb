@@ -150,6 +150,8 @@ class Intar
           end
           (execute OLD_SET).call r, @n
           @n += 1
+        rescue
+          show_exception
         end
         r
       ensure
@@ -345,8 +347,6 @@ class Intar
     puts i
   end
 
-  PACKAGE_BACKTRACE = %r/#{File.basename __FILE__, ".rb"}.*:\d+:in/
-
   def show_exception
     unless $!.to_s.empty? then
       switchcolor 1, 31
@@ -356,10 +356,8 @@ class Intar
     switchcolor 22, 31
     puts "(#{$!.class})"
     switchcolor 33
-    $@.each { |b|
-      break if b =~ PACKAGE_BACKTRACE
-      puts b
-    }
+    $@.pop until $@.empty? or $@.last.start_with? self.class.name
+    puts $@
     switchcolor
   end
 

@@ -2,8 +2,8 @@
 #  intar.rb  --  Interactive Ruby evaluation
 #
 
-require "supplement"
-require "supplement/terminal"
+require "intar/foreign/supplement"
+require "intar/foreign/supplement/terminal"
 require "intar/version"
 require "intar/prompt"
 require "intar/redirect"
@@ -328,7 +328,6 @@ class Intar
 
   # :stopdoc:
   ARROW    = "=> "
-  ELLIPSIS = "..."
   # :startdoc:
 
   def display r
@@ -339,12 +338,8 @@ class Intar
     i = ARROW.dup
     i << r.inspect
     if s > 0 then
-      siz, = $stdout.wingeom
-      siz *= s
-      if i.length > siz then
-        i.cut! siz-ELLIPSIS.length
-        i << ELLIPSIS
-      end
+      width, = $stdout.wingeom
+      i.axe! width*s
     end
     puts i
   end

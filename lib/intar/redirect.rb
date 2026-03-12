@@ -2,7 +2,7 @@
 #  intar/redirect.rb  --  Output redirection for Intar
 #
 
-require "supplement"
+require "intar/foreign/supplement"
 
 
 class Intar

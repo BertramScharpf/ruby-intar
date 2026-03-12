@@ -2,7 +2,7 @@
 #  intar/prompt.rb  --  Prompt for Intar
 #
 
-require "supplement"
+require "intar/foreign/supplement"
 require "reline"
 
 

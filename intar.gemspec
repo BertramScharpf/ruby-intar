@@ -18,8 +18,8 @@ Gem::Specification.new do |s|
 
   s.requirements      = "Ruby and some small Gems; Readline"
   s.add_dependency      "appl", "~>1"
-  s.add_dependency      "supplement", "~>2"
   s.add_dependency      "reline", "~>0.3"
+  # s.add_dependency      "supplement", "~>2"
 
   s.extensions        = %w()
   s.files             = %w(
@@ -29,6 +29,8 @@ Gem::Specification.new do |s|
                           lib/intar/version.rb
                           lib/intar/prompt.rb
                           lib/intar/redirect.rb
+                          lib/intar/foreign/supplement.rb
+                          lib/intar/foreign/supplement/terminal.rb
                         )
   s.executables       = %w(
                           intar

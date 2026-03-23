@@ -163,7 +163,7 @@ class Intar
   end
 
   def execute code
-    @binding.eval code, @file||"#{self.class}/execute"
+    @binding.eval code, @file||"#{self.class}:execute"
   end
 
   def set_var name, val
@@ -320,7 +320,7 @@ class Intar
       end
       cp.strip!
       cp.gsub! /\e\[[0-9]*(;[0-9]*)*m/, ""
-      @file = "#{self.class}/#{cp}"
+      @file = "#{self.class}:#{cp}"
     end until r
     switchcolor
     r

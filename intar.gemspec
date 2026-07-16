@@ -16,6 +16,7 @@ Gem::Specification.new do |s|
   s.email             = "<software@bertram-scharpf.de>"
   s.homepage          = "http://www.bertram-scharpf.de"
 
+  s.required_ruby_version = ">= 3.0"
   s.requirements      = "Ruby and some small Gems; Readline"
   s.add_dependency      "appl", "~>1"
   s.add_dependency      "reline", "~>0.3"
